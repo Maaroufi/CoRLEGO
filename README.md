@@ -4,9 +4,9 @@ CoRLEGO Project
 1. You have to install V-REP and Matlab. 
 2. Download Cosivina and open the folder on Matlab
 3. Make sure to register COSIVINA path to Matlab by running the 'setpath.m' of the Cosivina folder.
-4. Open V-REP and open the CoRLEGO.ttt scene from the CoRRep folder
+4. Open V-REP and open the CoRLEGO.ttt scene
 5. Run the V-REP simulator (before the Matlab script as V-REP is the Server)
-6. Now open the CoRMatlab folder and open the file 'launcherSimulator.m' with Matlab
+6. Now open the file 'launcherSimulator.m' with Matlab
 7. Run the script 
 
 Note:

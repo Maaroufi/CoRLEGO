@@ -4,6 +4,11 @@ vrep=remApi('remoteApi'); % using the prototype file (remoteApiProto.m)
 vrep.simxFinish(-1); % just in case, close all opened connections
 clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
 test = 0;
+nbOfColumnsRed = 0;
+nbOfColumnsGreen = 0;
+currentColor = 0;
+flag = 0;
+
 if (clientID>-1)
     disp('Matlab and V-Rep connected')
     vrep.simxAddStatusbarMessage(clientID,'Matlab successfully connected!',vrep.simx_opmode_oneshot);
@@ -91,7 +96,6 @@ if (clientID>-1)
     gui.addControl(GlobalControlButton('Load', gui, 'loadParameters', true, false, true, 'load parameter settings'), [14, 1]);
     gui.addControl(GlobalControlButton('Quit', gui, 'quitSimulation', true, false, false, 'quit simulation'), [15, 1]);
 
-
     
     %% Loop to step the simulator and update the gui
     
@@ -115,15 +119,67 @@ if (clientID>-1)
             
             % Save the img into a file called 'im.jpg' into the root folder of the project
             imwrite(img,'im.jpg');
-         	[test, ob1, ob2, ob3] = vrep.simxCallScriptFunction(clientID, 'base',vrep.sim_scripttype_childscript, 'allumer', [],[],'',[],vrep.simx_opmode_oneshot);
             
-            if test == 1
-                sim.setElementParameters('ce scaled', 'amplitude', 10);
-            end 
+         	%[test, ob1, ob2, ob3] = vrep.simxCallScriptFunction(clientID, 'base',vrep.sim_scripttype_childscript, 'allumer', [],[],'',[],vrep.simx_opmode_oneshot);
+            
+%             if test == 1
+%                 sim.setElementParameters('ce scaled', 'amplitude', 10);
+%             end 
                 
             % update the gui (Note: The class ImageLoader have been modified in the step() function, by adding: init(obj) )
             gui.step();
-
+            s1 = sim.getElement('ce');
+            resultat = s1.output;
+            %disp(resultat);
+            s4 = sim.getElement('ce scaled');
+            %disp(s4.output)
+            
+            %sim.setElementParameters('ce scaled', 'amplitude', 10);
+            
+            % Calculation of the input activation of the red and green
+            % color
+            for iCol = 1:fieldSize
+                if resultat(1, iCol) ~= 0 
+                    nbOfColumnsRed = nbOfColumnsRed +1;
+                end    
+                if resultat(2, iCol) ~= 0 
+                    nbOfColumnsGreen = nbOfColumnsGreen +1;
+                end  
+            end
+            
+            % For debbuging purpose
+            %fprintf('The color Red have %d columns\n', nbOfColumnsRed);
+            %fprintf('The color Green have %d columns\n', nbOfColumnsGreen);
+            
+            % competition process to activates the unit with the smaller
+            % input activation
+            if nbOfColumnsGreen ~= 0 && nbOfColumnsRed ~= 0
+                if nbOfColumnsGreen < nbOfColumnsRed
+                    if currentColor == 1 || currentColor == 0
+                        fprintf('The color Green is the odd color\n');
+                        sim.setElementParameters('ce scaled', 'amplitude', 10);
+                        currentColor = 2;
+                        vrep.simxCallScriptFunction(clientID, 'base',vrep.sim_scripttype_childscript, 'handleIk', [0,1,0],[],'',[],vrep.simx_opmode_oneshot);
+                    end
+                end
+                if nbOfColumnsGreen > nbOfColumnsRed
+                    if currentColor == 2 || currentColor == 0
+                        fprintf('The color Red is the odd color\n');
+                        currentColor = 1;
+                        vrep.simxCallScriptFunction(clientID, 'base',vrep.sim_scripttype_childscript, 'handleIk', [1,0,0],[],'',[],vrep.simx_opmode_oneshot);
+                    end
+                end
+            else
+             	if currentColor == 2 || currentColor == 1 || flag == 0
+                    fprintf('No odd color\n');
+                    currentColor = 0;
+                    flag = 1;
+              	end
+                %fprintf('No odd color\n');
+                %currentColor = 0;
+            end    
+            nbOfColumnsRed = 0;
+            nbOfColumnsGreen = 0;
         else
             fprintf('Remote API function call returned with error code: %d\n',res);
         end
